@@ -1,0 +1,22 @@
+{
+  "name": "lazada-backend",
+  "version": "1.0.0",
+  "description": "Backend Lazada OAuth callback and order management",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "lazada",
+    "oauth",
+    "backend"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0"
+  }
+}
