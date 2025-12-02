@@ -1,84 +1,76 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const crypto = require('crypto');
-
+// api/index.js
+require("dotenv").config();
+const express = require("express");
+const axios = require("axios");
+const crypto = require("crypto");
+const serverless = require("serverless-http"); // nếu muốn, nhưng với Express mới của Vercel có thể không cần [web:91][web:92]
 
 const app = express();
 
 const LAZADA_APP_KEY = process.env.LAZADA_APP_KEY;
 const LAZADA_APP_SECRET = process.env.LAZADA_APP_SECRET;
-const LAZADA_AUTH_API = 'https://auth.lazada.vn/rest';
-const LAZADA_API_URL = 'https://api.lazada.vn/rest';
-
+const LAZADA_AUTH_API = "https://auth.lazada.vn/rest";
+const LAZADA_API_URL = "https://api.lazada.vn/rest";
 
 // Hàm ký request Lazada
 function signLazada(path, params) {
   const keys = Object.keys(params).sort();
   let str = path;
-  keys.forEach(k => {
+  keys.forEach((k) => {
     str += k + params[k];
   });
   return crypto
-    .createHmac('sha256', LAZADA_APP_SECRET)
+    .createHmac("sha256", LAZADA_APP_SECRET)
     .update(str)
-    .digest('hex')
+    .digest("hex")
     .toUpperCase();
 }
 
-app.get('/', (req, res) => {
-  res.send('Lazada backend OK');
+app.get("/", (req, res) => {
+  res.send("Lazada backend OK - Vercel");
 });
 
-// CALLBACK URL cho Lazada
-app.get('/lazada/callback', async (req, res) => {
+app.get("/lazada/callback", async (req, res) => {
   const { code, state } = req.query;
-  if (!code) return res.status(400).send('Missing code');
+  if (!code) return res.status(400).send("Missing code");
 
-  console.log('Received code from Lazada:', code, 'state:', state);
+  console.log("Received code from Lazada:", code, "state:", state);
 
   // Gọi Lazada để đổi code lấy access_token (sau này dùng quản lý đơn)
   try {
-    const path = '/auth/token/create';
+    const path = "/auth/token/create";
     const params = {
       app_key: LAZADA_APP_KEY,
       code,
-      sign_method: 'sha256',
-      timestamp: Date.now()
+      sign_method: "sha256",
+      timestamp: Date.now(),
     };
     params.sign = signLazada(path, params);
 
     const response = await axios.get(`${LAZADA_AUTH_API}${path}`, { params });
     const data = response.data;
 
-    console.log('Lazada token response:', data);
+    console.log("Lazada token response:", data);
     // TODO: lưu data.access_token, data.refresh_token vào DB
 
-    res.send('Lazada connected successfully, check server log.');
+    res.send("Lazada connected successfully, check server log.");
   } catch (e) {
     console.error(e.response?.data || e.message);
-    res.status(500).send('Error when getting Lazada token');
+    res.status(500).send("Error when getting Lazada token");
   }
 });
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log('Server running on port', PORT);
-});
-
-const ACCESS_TOKEN = '50000101941fBVesqc8BeqAqz0eihPKzjtX9i58QOfywXpPRYEHh612f72370stq';
-
-app.get('/products', async (req, res) => {
+app.get("/products", async (req, res) => {
   try {
-    const path = '/products/get';
+    const path = "/products/get";
     const params = {
       app_key: LAZADA_APP_KEY,
       access_token: ACCESS_TOKEN,
-      sign_method: 'sha256',
+      sign_method: "sha256",
       timestamp: Date.now(),
-      filter: 'all',
+      filter: "all",
       offset: 0,
-      limit: 50
+      limit: 50,
     };
     params.sign = signLazada(path, params);
 
@@ -91,18 +83,20 @@ app.get('/products', async (req, res) => {
   }
 });
 
-app.get('/shop', async (req, res) => {
+app.get("/shop", async (req, res) => {
   try {
-    const path = '/seller/get';
+    const path = "/seller/get";
     const params = {
       app_key: LAZADA_APP_KEY,
-      access_token: ACCESS_TOKEN,   // token đang dùng
-      sign_method: 'sha256',
-      timestamp: Date.now()
+      access_token: ACCESS_TOKEN, // token đang dùng
+      sign_method: "sha256",
+      timestamp: Date.now(),
     };
     params.sign = signLazada(path, params);
 
-    const response = await axios.get(`https://api.lazada.vn/rest${path}`, { params });
+    const response = await axios.get(`https://api.lazada.vn/rest${path}`, {
+      params,
+    });
     // Trong response.data.data.name là tên shop [web:82]
     res.json(response.data);
   } catch (e) {
@@ -111,3 +105,5 @@ app.get('/shop', async (req, res) => {
   }
 });
 
+// Không app.listen
+module.exports = app;
