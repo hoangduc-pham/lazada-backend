@@ -139,3 +139,34 @@ app.get("/product-item", async (req, res) => {
     res.status(500).json(e.response?.data || { message: e.message });
   }
 });
+
+// GET /payout-status?created_after=2025-01-01T00:00:00
+app.get("/payout-status", async (req, res) => {
+  const { created_after } = req.query;
+
+  // Tham số này là bắt buộc theo docs [web:62]
+  if (!created_after) {
+    return res.status(400).json({
+      message: "Missing created_after (format YYYY-MM-DDThh:mm:ss)",
+    });
+  }
+
+  try {
+    const path = "/finance/payout/status/get";
+    const params = {
+      app_key: LAZADA_APP_KEY,
+      access_token: ACCESS_TOKEN,
+      sign_method: "sha256",
+      timestamp: Date.now(),
+      created_after, // filter statement tạo sau thời điểm này [web:62]
+    };
+    params.sign = signLazada(path, params);
+
+    const response = await axios.get(`${LAZADA_API_URL}${path}`, { params });
+    // Trả nguyên JSON từ Lazada: code, data (các payout), request_id...
+    res.json(response.data);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).json(e.response?.data || { message: e.message });
+  }
+});
