@@ -185,3 +185,18 @@ app.get("/payout-status", async (req, res) => {
     res.status(500).json(e.response?.data || { message: e.message });
   }
 });
+
+// ví dụ trong index.js
+app.use(express.json());
+
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  // TODO: kiểm tra trong DB; hiện có thể mock:
+  if (email === "test@example.com" && password === "123456") {
+    return res.json({
+      user: { id: "1", email },
+      token: "dummy-jwt-or-session",
+    });
+  }
+  return res.status(401).json({ message: "Email hoặc mật khẩu không đúng" });
+});
