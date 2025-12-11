@@ -7,7 +7,7 @@ const app = express();
 
 const LAZADA_APP_KEY = process.env.LAZADA_APP_KEY;
 const LAZADA_APP_SECRET = process.env.LAZADA_APP_SECRET;
-const LAZADA_AUTH_API = "https://auth.lazada.vn/rest";
+const LAZADA_AUTH_API = "https://auth.lazada.com/rest";
 const LAZADA_API_URL = "https://api.lazada.vn/rest";
 
 // Hàm ký request Lazada
