@@ -9,6 +9,8 @@ const LAZADA_APP_KEY = process.env.LAZADA_APP_KEY;
 const LAZADA_APP_SECRET = process.env.LAZADA_APP_SECRET;
 const LAZADA_AUTH_API = "https://auth.lazada.com/rest";
 const LAZADA_API_URL = "https://api.lazada.vn/rest";
+const fs = require("fs");
+const pathToken = "./token.json";
 
 // Hàm ký request Lazada
 function signLazada(path, params) {
@@ -51,6 +53,16 @@ app.get("/lazada/callback", async (req, res) => {
 
     console.log("Lazada token response:", data);
     // TODO: lưu data.access_token, data.refresh_token vào DB
+    const now = Date.now();
+    const tokenToSave = {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      // expires_in, refresh_expires_in là số giây Lazada trả về
+      expires_at: now + data.expires_in * 1000,
+      refresh_expires_at: now + data.refresh_expires_in * 1000,
+    };
+
+    fs.writeFileSync(pathToken, JSON.stringify(tokenToSave, null, 2));
 
     res.send("Lazada connected successfully, check server log.");
   } catch (e) {
@@ -64,15 +76,18 @@ app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
 
-const ACCESS_TOKEN =
-  "50000101921fBVesqc8BeqAqz0eihPKzj114dfdd6tX9i58QOfywXpPRYEHh6stq";
+function getAccessTokenFromFile() {
+  const raw = fs.readFileSync(pathToken, "utf8");
+  const token = JSON.parse(raw);
+  return token.access_token;
+}
 
 app.get("/products", async (req, res) => {
   try {
     const path = "/products/get";
     const params = {
       app_key: LAZADA_APP_KEY,
-      access_token: ACCESS_TOKEN,
+      access_token: getAccessTokenFromFile(),
       sign_method: "sha256",
       timestamp: Date.now(),
       filter: "all",
@@ -95,7 +110,7 @@ app.get("/shop", async (req, res) => {
     const path = "/seller/get";
     const params = {
       app_key: LAZADA_APP_KEY,
-      access_token: ACCESS_TOKEN, // token đang dùng
+      access_token: getAccessTokenFromFile(),
       sign_method: "sha256",
       timestamp: Date.now(),
     };
@@ -123,7 +138,7 @@ app.get("/product-item", async (req, res) => {
     const path = "/product/item/get";
     const params = {
       app_key: LAZADA_APP_KEY,
-      access_token: ACCESS_TOKEN,
+      access_token: getAccessTokenFromFile(),
       sign_method: "sha256",
       timestamp: Date.now(),
       item_id, // tham số bắt buộc [web:71]
@@ -155,7 +170,7 @@ app.get("/payout-status", async (req, res) => {
     const path = "/finance/payout/status/get";
     const params = {
       app_key: LAZADA_APP_KEY,
-      access_token: ACCESS_TOKEN,
+      access_token: getAccessTokenFromFile(),
       sign_method: "sha256",
       timestamp: Date.now(),
       created_after, // filter statement tạo sau thời điểm này [web:62]
