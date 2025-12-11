@@ -65,7 +65,7 @@ app.listen(PORT, () => {
 });
 
 const ACCESS_TOKEN =
-  "50000101941fBVesqc8BeqAqz0eihPKzjtX9i58QOfywXpPRYEHh612f72370stq";
+  "50000101921fBVesqc8BeqAqz0eihPKzj114dfdd6tX9i58QOfywXpPRYEHh6stq";
 
 app.get("/products", async (req, res) => {
   try {
