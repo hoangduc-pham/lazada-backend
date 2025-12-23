@@ -186,17 +186,51 @@ app.get("/payout-status", async (req, res) => {
   }
 });
 
-// ví dụ trong index.js
-app.use(express.json());
+// GET /seller-performance?language=vi-VN (mặc định en-US)
+app.get("/seller-performance", async (req, res) => {
+  // 1. Lấy tham số language từ query, mặc định là en-US
+  // Các ngôn ngữ hỗ trợ theo tài liệu: en-US, zh-CN, ms-MY, th-TH, vi-VN, id-ID
+  const { language } = req.query;
 
-app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  // TODO: kiểm tra trong DB; hiện có thể mock:
-  if (email === "test@example.com" && password === "123456") {
-    return res.json({
-      user: { id: "1", email },
-      token: "dummy-jwt-or-session",
-    });
+  try {
+    const path = "/seller/performance/get";
+
+    // 2. Chuẩn bị tham số gọi Lazada
+    const params = {
+      app_key: LAZADA_APP_KEY,
+      access_token: getAccessTokenFromFile(),
+      sign_method: "sha256",
+      timestamp: Date.now(),
+      // language là tham số tùy chọn (Optional)
+      ...(language && { language }),
+    };
+
+    // 3. Ký request
+    params.sign = signLazada(path, params);
+
+    // 4. Gọi API Lazada
+    const response = await axios.get(`${LAZADA_API_URL}${path}`, { params });
+
+    // 5. Trả về kết quả JSON cho Client (Flutter App)
+    // Response sẽ chứa data.indicators (các chỉ số)
+    res.json(response.data);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).json(e.response?.data || { message: e.message });
   }
-  return res.status(401).json({ message: "Email hoặc mật khẩu không đúng" });
 });
+
+// ví dụ trong index.js
+// app.use(express.json());
+
+// app.post("/login", async (req, res) => {
+//   const { email, password } = req.body;
+//   // TODO: kiểm tra trong DB; hiện có thể mock:
+//   if (email === "test@example.com" && password === "123456") {
+//     return res.json({
+//       user: { id: "1", email },
+//       token: "dummy-jwt-or-session",
+//     });
+//   }
+//   return res.status(401).json({ message: "Email hoặc mật khẩu không đúng" });
+// });
