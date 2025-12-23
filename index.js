@@ -220,6 +220,35 @@ app.get("/seller-performance", async (req, res) => {
   }
 });
 
+// GET /warehouse
+app.get("/warehouse", async (req, res) => {
+  try {
+    const path = "/rc/warehouse/get";
+
+    // 1. Chuẩn bị tham số
+    const params = {
+      app_key: LAZADA_APP_KEY,
+      access_token: getAccessTokenFromFile(),
+      sign_method: "sha256",
+      timestamp: Date.now(),
+      // API này không yêu cầu tham số nào khác ngoài auth
+    };
+
+    // 2. Ký request
+    params.sign = signLazada(path, params);
+
+    // 3. Gọi API Lazada
+    const response = await axios.get(`${LAZADA_API_URL}${path}`, { params });
+
+    // 4. Trả về kết quả
+    // Cấu trúc trả về thường là response.data.result.module (chứa list kho)
+    res.json(response.data);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).json(e.response?.data || { message: e.message });
+  }
+});
+
 // ví dụ trong index.js
 // app.use(express.json());
 
