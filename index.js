@@ -312,6 +312,91 @@ app.get("/seller-notifications", async (req, res) => {
   }
 });
 
+// GET /countries?type=register
+app.get("/countries", async (req, res) => {
+  // Lấy tham số type từ URL, mặc định là "register" nếu không truyền
+  const { type, seller_country } = req.query;
+
+  try {
+    const path = "/seller/cb/country/get";
+
+    // 1. Chuẩn bị tham số
+    const params = {
+      app_key: LAZADA_APP_KEY,
+      // API này KHÔNG cần access_token
+      sign_method: "sha256",
+      timestamp: Date.now(),
+
+      // Tham số nghiệp vụ
+      type: type || "register",
+
+      // seller_country là tham số tùy chọn (Optional)
+      ...(seller_country && { seller_country }),
+    };
+
+    // 2. Ký request
+    params.sign = signLazada(path, params);
+
+    // 3. Gọi API Lazada
+    const response = await axios.get(`${LAZADA_API_URL}${path}`, { params });
+
+    // 4. Trả về kết quả
+    // Dữ liệu nằm trong: response.data.data (mảng các quốc gia: label, value)
+    res.json(response.data);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).json(e.response?.data || { message: e.message });
+  }
+});
+
+// POST /check-seller-register
+// Body nhận vào: { companyName: "ABC", licenseNumber: "123", ... }
+app.post("/check-seller-register", express.json(), async (req, res) => {
+  // Lấy dữ liệu từ body request gửi lên
+  const clientPayload = req.body;
+
+  // Nếu client chưa gửi gì thì báo lỗi
+  if (!clientPayload || Object.keys(clientPayload).length === 0) {
+    return res.status(400).json({ message: "Missing payload body" });
+  }
+
+  try {
+    const path = "/seller/cb/register/info";
+
+    // 1. Chuẩn bị payload theo định dạng Lazada yêu cầu
+    // Lazada yêu cầu tham số 'payload' là một JSON String mảng đối tượng
+    // Ví dụ: '[{"companyName":"ABC Corp","licenseNumber":"123456"}]'
+    const lazadaPayloadString = JSON.stringify([clientPayload]);
+
+    // 2. Chuẩn bị tham số gọi API
+    const params = {
+      app_key: LAZADA_APP_KEY,
+      sign_method: "sha256",
+      timestamp: Date.now(),
+      // Tham số quan trọng nhất
+      payload: lazadaPayloadString,
+    };
+
+    // 3. Ký request
+    params.sign = signLazada(path, params);
+
+    // 4. Gọi API Lazada (Dùng POST theo khuyến nghị tài liệu mẫu Java bên phải)
+    // Với axios POST, params query để trong params, body data nếu có để riêng.
+    // Nhưng API này của Lazada thường nhận tham số qua Query String hoặc Form Data.
+    // Ở đây ta gửi params vào query string cho chắc chắn.
+    const response = await axios.post(`${LAZADA_API_URL}${path}`, null, {
+      params,
+    });
+
+    // 5. Trả về kết quả
+    // Kết quả trả về chứa: baseInfoList (thông tin shop nếu đã tồn tại)
+    res.json(response.data);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).json(e.response?.data || { message: e.message });
+  }
+});
+
 // ví dụ trong index.js
 // app.use(express.json());
 
