@@ -249,6 +249,35 @@ app.get("/warehouse", async (req, res) => {
   }
 });
 
+// GET /warehouse-detail
+app.get("/warehouse-detail", async (req, res) => {
+  try {
+    const path = "/rc/warehouse/detail/get";
+
+    // 1. Chuẩn bị tham số
+    const params = {
+      app_key: LAZADA_APP_KEY,
+      access_token: getAccessTokenFromFile(),
+      sign_method: "sha256",
+      timestamp: Date.now(),
+      // API này không cần thêm tham số khác
+    };
+
+    // 2. Ký request
+    params.sign = signLazada(path, params);
+
+    // 3. Gọi API Lazada
+    const response = await axios.get(`${LAZADA_API_URL}${path}`, { params });
+
+    // 4. Trả về kết quả
+    // Cấu trúc response: response.data.result.module
+    res.json(response.data);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).json(e.response?.data || { message: e.message });
+  }
+});
+
 // ví dụ trong index.js
 // app.use(express.json());
 
