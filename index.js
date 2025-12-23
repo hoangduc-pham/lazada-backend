@@ -278,6 +278,40 @@ app.get("/warehouse-detail", async (req, res) => {
   }
 });
 
+// GET /seller-notifications?page=1&pageSize=10&language=vi
+app.get("/seller-notifications", async (req, res) => {
+  const { page, pageSize, language } = req.query;
+
+  try {
+    const path = "/sellercenter/msg/list";
+
+    // 1. Chuẩn bị tham số
+    const params = {
+      app_key: LAZADA_APP_KEY,
+      access_token: getAccessTokenFromFile(),
+      sign_method: "sha256",
+      timestamp: Date.now(),
+      // Các tham số tùy chọn (Optional Parameters)
+      page: page || "1", // Mặc định trang 1
+      pageSize: pageSize || "20", // Mặc định 20 tin/trang
+      language: language || "vi", // Mặc định tiếng Việt (vi/en/id...)
+    };
+
+    // 2. Ký request
+    params.sign = signLazada(path, params);
+
+    // 3. Gọi API Lazada
+    const response = await axios.get(`${LAZADA_API_URL}${path}`, { params });
+
+    // 4. Trả về kết quả
+    // Dữ liệu chính nằm trong: response.data.result.data.dataSource
+    res.json(response.data);
+  } catch (e) {
+    console.error(e.response?.data || e.message);
+    res.status(500).json(e.response?.data || { message: e.message });
+  }
+});
+
 // ví dụ trong index.js
 // app.use(express.json());
 
